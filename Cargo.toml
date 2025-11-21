@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "claude-auth-router",
+    "claude-auth-client"
+]
+resolver = "2"
