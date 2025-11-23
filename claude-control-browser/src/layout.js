@@ -1,7 +1,11 @@
 const { BrowserView, session } = require("electron");
 const { ACCOUNTS, DEFAULT_TARGET_URL, CHROME_USER_AGENT } = require("./config");
+const { assignNodesToAccounts, connectToNode } = require("./wireguard");
 
 function createAccountViews() {
+  // Assign WireGuard nodes to accounts
+  const vpnAssignments = assignNodesToAccounts(ACCOUNTS);
+
   return ACCOUNTS.map((acc) => {
     const accSession = session.fromPartition(acc.partition);
     const view = new BrowserView({
@@ -16,7 +20,18 @@ function createAccountViews() {
 
     const startUrl = acc.startupUrl || DEFAULT_TARGET_URL || "about:blank";
     view.webContents.loadURL(startUrl);
-    return { account: acc, view };
+
+    // Store VPN assignment info
+    const vpnInfo = vpnAssignments[acc.id];
+    if (vpnInfo) {
+      console.log(`[VPN] Account ${acc.id} (${acc.name}) -> ${vpnInfo.nodeName} (${vpnInfo.region})`);
+      // Note: Actual VPN connection would happen here in production
+      // connectToNode(vpnInfo.nodeConfig, `wg${acc.id}`).then(result => {
+      //   console.log(`[VPN] Connection result:`, result);
+      // });
+    }
+
+    return { account: acc, view, vpnInfo };
   });
 }
 

@@ -202,10 +202,8 @@ function renderTimerOverlay(accountId, display, flashing) {
     if(!document.getElementById(styleId)){
       const st = document.createElement('style');
       st.id = styleId;
-      st.textContent = `
-        @keyframes claw-timer-flash { from { opacity: 1; } 50% { opacity: 0.3; } to { opacity: 1; } }
-        #__claw_timer_overlay.claw-flash { animation: claw-timer-flash 0.9s ease-in-out infinite; }
-      `;
+      st.textContent = '@keyframes claw-timer-flash { from { opacity: 1; } 50% { opacity: 0.3; } to { opacity: 1; } } ' +
+        '#__claw_timer_overlay.claw-flash { animation: claw-timer-flash 0.9s ease-in-out infinite; }';
       document.head.appendChild(st);
     }
     const root = existing || document.createElement('div');
