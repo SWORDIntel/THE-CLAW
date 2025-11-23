@@ -2,6 +2,7 @@
 const DEFAULT_TARGET_URL = "https://claude.ai";
 const CLAUDE_CODE_URL = "https://claude.ai/new?mode=code";
 const CHATGPT_URL = "https://chatgpt.com";
+const GEMINI_URL = "https://gemini.google.com";
 const MAIL_POPUP_URL = process.env.MAIL_POPUP_URL || "https://mail.google.com/";
 const MAIL_POPUP_PARTITION = "persist:mail-login";
 
@@ -14,8 +15,9 @@ const ACCOUNTS = [
   { id: 3, name: "Claude Code #3", partition: "persist:claude-code-3", startupUrl: CLAUDE_CODE_URL },
   { id: 4, name: "Claude Workspace #4", partition: "persist:claude-workspace-4", startupUrl: DEFAULT_TARGET_URL },
   { id: 5, name: "Claude Workspace #5", partition: "persist:claude-workspace-5", startupUrl: DEFAULT_TARGET_URL },
-  // Dedicated ChatGPT/verification pane with manual navigation controls
-  { id: 6, name: "ChatGPT / Verification", partition: "persist:chatgpt-verification", startupUrl: CHATGPT_URL }
+  { id: 6, name: "ChatGPT #6", partition: "persist:chatgpt-6", startupUrl: CHATGPT_URL },
+  { id: 7, name: "ChatGPT #7", partition: "persist:chatgpt-7", startupUrl: CHATGPT_URL },
+  { id: 8, name: "Gemini #8", partition: "persist:gemini-8", startupUrl: GEMINI_URL }
 ];
 
 const VERIFICATION_VIEW_ID = 6;
@@ -98,6 +100,7 @@ module.exports = {
   VERIFICATION_VIEW_ID,
   CLAUDE_CODE_URL,
   CHATGPT_URL,
+  GEMINI_URL,
   CHROME_USER_AGENT,
   MIN_WINDOW_WIDTH,
   MIN_WINDOW_HEIGHT,
