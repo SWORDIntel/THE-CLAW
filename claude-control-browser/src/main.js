@@ -1,4 +1,4 @@
-const { app, BrowserWindow, session } = require("electron");
+const { app, BrowserWindow, session, Menu } = require("electron");
 const http = require("http");
 const https = require("https");
 const {
@@ -113,6 +113,20 @@ function bindWindowOpenHandler(webContents) {
   });
 }
 
+function bindContextMenu(entry) {
+  const { view, account } = entry;
+  view.webContents.on("context-menu", (event) => {
+    event.preventDefault();
+    const menu = Menu.buildFromTemplate([
+      { label: `Open URL in ${account.name}...`, click: () => promptAndOpenUrl(entry) },
+      { label: "Toggle inline URL bar", click: () => toggleInlineUrlBar(view.webContents, account.name) },
+      { type: "separator" },
+      { label: "Reload", click: () => view.webContents.reload() }
+    ]);
+    menu.popup({ window: mainWindow });
+  });
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1500,
@@ -124,9 +138,10 @@ function createWindow() {
   });
 
   views = createAccountViews();
-  views.forEach(({ view }) => {
-    attachContentHelpers(view.webContents);
-    bindWindowOpenHandler(view.webContents);
+  views.forEach((entry) => {
+    attachContentHelpers(entry.view.webContents);
+    bindWindowOpenHandler(entry.view.webContents);
+    bindContextMenu(entry);
   });
   layoutViewsInGrid(mainWindow, views);
 
@@ -145,13 +160,165 @@ function safeNormalizeUrl(rawUrl) {
   }
 }
 
+function normalizeUserUrl(rawUrl) {
+  const normalized = safeNormalizeUrl(rawUrl);
+  if (normalized) return normalized;
+  if (!rawUrl) return null;
+  try {
+    return new URL(`https://${rawUrl}`).toString();
+  } catch (err) {
+    return null;
+  }
+}
+
+async function promptAndOpenUrl(targetEntry) {
+  const { view, account } = targetEntry;
+  let input = null;
+  try {
+    input = await view.webContents.executeJavaScript(
+      `window.prompt(${JSON.stringify(`Open URL in ${account.name}`)}, ${JSON.stringify(view.webContents.getURL() || "https://")})`
+    );
+  } catch (err) {
+    return;
+  }
+
+  if (!input) return;
+  const normalized = normalizeUserUrl(input);
+  if (!normalized) {
+    view.webContents.executeJavaScript('alert("Please enter a valid URL (example.com or https://example.com).")').catch(() => {});
+    return;
+  }
+  view.webContents.loadURL(normalized);
+}
+
+function toggleInlineUrlBar(webContents, accountName) {
+  const script = `(function(){
+    const paneLabel = ${JSON.stringify(accountName || "this pane")};
+    const existing = document.getElementById('__claw_url_bar');
+    if (existing) { existing.remove(); return 'hidden'; }
+    const wrapper = document.createElement('div');
+    wrapper.id = '__claw_url_bar';
+    wrapper.style.position = 'fixed';
+    wrapper.style.top = '8px';
+    wrapper.style.left = '50%';
+    wrapper.style.transform = 'translateX(-50%)';
+    wrapper.style.background = 'rgba(0,0,0,0.8)';
+    wrapper.style.border = '1px solid #4fa3ff';
+    wrapper.style.borderRadius = '10px';
+    wrapper.style.padding = '8px';
+    wrapper.style.zIndex = 2147483647;
+    wrapper.style.display = 'flex';
+    wrapper.style.gap = '6px';
+    wrapper.style.alignItems = 'center';
+    wrapper.style.boxShadow = '0 6px 20px rgba(0,0,0,0.35)';
+    wrapper.style.backdropFilter = 'blur(6px)';
+    wrapper.style.pointerEvents = 'auto';
+
+    const form = document.createElement('form');
+    form.style.display = 'flex';
+    form.style.gap = '6px';
+    form.style.alignItems = 'center';
+    form.style.margin = '0';
+
+    const title = document.createElement('span');
+    title.textContent = "URL for " + paneLabel;
+    title.style.color = '#d8e5ff';
+    title.style.fontSize = '13px';
+    title.style.fontWeight = '700';
+    title.style.marginRight = '6px';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'https://example.com';
+    input.value = window.location.href;
+    input.style.width = '380px';
+    input.style.maxWidth = '60vw';
+    input.style.flex = '1';
+    input.style.padding = '8px 10px';
+    input.style.borderRadius = '6px';
+    input.style.border = '1px solid #1e2a3a';
+    input.style.background = '#0a0c12';
+    input.style.color = '#e6eef6';
+    input.style.fontSize = '14px';
+
+    const goBtn = document.createElement('button');
+    goBtn.type = 'submit';
+    goBtn.textContent = 'Go';
+    goBtn.style.padding = '8px 12px';
+    goBtn.style.borderRadius = '6px';
+    goBtn.style.border = '1px solid #1e2a3a';
+    goBtn.style.background = 'linear-gradient(135deg, #111827, #0b1220)';
+    goBtn.style.color = '#d8e5ff';
+    goBtn.style.fontWeight = '700';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.textContent = '×';
+    closeBtn.style.padding = '8px 10px';
+    closeBtn.style.borderRadius = '6px';
+    closeBtn.style.border = '1px solid #1e2a3a';
+    closeBtn.style.background = '#111827';
+    closeBtn.style.color = '#d8e5ff';
+    closeBtn.style.fontWeight = '700';
+
+    form.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const raw = (input.value || '').trim();
+      if (!raw) return;
+      let target = raw;
+      try {
+        target = new URL(raw).toString();
+      } catch (_) {
+        try {
+          target = new URL('https://' + raw).toString();
+        } catch (err) {
+          alert('Please enter a valid URL (example.com or https://example.com).');
+          return;
+        }
+      }
+      window.location.href = target;
+      wrapper.remove();
+    });
+
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape') {
+        ev.stopPropagation();
+        wrapper.remove();
+      }
+    });
+
+    document.addEventListener('keydown', function handleEsc(ev) {
+      if (ev.key === 'Escape') {
+        wrapper.remove();
+        document.removeEventListener('keydown', handleEsc);
+      }
+    });
+
+    closeBtn.addEventListener('click', () => {
+      wrapper.remove();
+    });
+
+    form.appendChild(title);
+    form.appendChild(input);
+    form.appendChild(goBtn);
+    form.appendChild(closeBtn);
+    wrapper.appendChild(form);
+    document.body.appendChild(wrapper);
+    input.focus();
+    input.select();
+    return 'shown';
+  })();`;
+
+  webContents.executeJavaScript(script).catch(() => {});
+}
+
 function openUrlInView(accountId, targetUrl) {
   const target = getViewByAccountId(views, accountId);
   if (!target) {
     return { ok: false, status: 404, body: { status: "not_found" } };
   }
 
-  const normalized = safeNormalizeUrl(targetUrl);
+  const normalized = normalizeUserUrl(targetUrl);
   if (!normalized) {
     return { ok: false, status: 400, body: { status: "invalid_url" } };
   }
@@ -438,7 +605,8 @@ function renderControlPage() {
     </head>
     <body>
       <h1>Claude Control Browser</h1>
-      <p>Eight panes in a 4x2 grid: 5 Claude sessions (3 Code, 2 Workspace), 2 ChatGPT sessions, and 1 Gemini session for diversified AI access and verification.</p>
+      <p>Eight panes in a 4x2 grid: 7 Claude sessions (mix of Code and Workspace) plus 1 dedicated ChatGPT pane for verification and cross-checks.</p>
+      <div class="hint">Right-click inside any pane to open a quick URL prompt or toggle an inline URL bar on that pane.</div>
       <form id="nav-form" class="card">
         <h2>Navigation</h2>
         <label for="account">Target pane</label>
