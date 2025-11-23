@@ -1,5 +1,32 @@
+# Dependencies
 node_modules/
-dist/
+
+# Electron session data
+sessions/
+
+# Logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# WireGuard configs (sensitive)
+wireguard/*.conf
+wireguard/*.key
+
+# Keep the directory structure
+!wireguard/.gitkeep
+
+# Environment variables
 .env
 .env.local
