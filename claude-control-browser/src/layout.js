@@ -1,5 +1,5 @@
 const { BrowserView, session } = require("electron");
-const { ACCOUNTS, TARGET_URL } = require("./config");
+const { ACCOUNTS, DEFAULT_TARGET_URL, CHROME_USER_AGENT } = require("./config");
 
 function createAccountViews() {
   return ACCOUNTS.map((acc) => {
@@ -10,7 +10,12 @@ function createAccountViews() {
       }
     });
 
-    view.webContents.loadURL(TARGET_URL);
+    if (CHROME_USER_AGENT) {
+      view.webContents.setUserAgent(CHROME_USER_AGENT);
+    }
+
+    const startUrl = acc.startupUrl || DEFAULT_TARGET_URL || "about:blank";
+    view.webContents.loadURL(startUrl);
     return { account: acc, view };
   });
 }
