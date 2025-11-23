@@ -303,10 +303,12 @@ function getPositionLabel(accountId) {
   const index = ACCOUNTS.findIndex((acc) => acc.id === accountId);
   const labels = [
     "top-left",
-    "top-center",
+    "top-center-left",
+    "top-center-right",
     "top-right",
     "bottom-left",
-    "bottom-center",
+    "bottom-center-left",
+    "bottom-center-right",
     "bottom-right"
   ];
   if (index >= 0 && index < labels.length) {
@@ -381,7 +383,7 @@ function updateTimer(accountId) {
   if (remaining <= 0 && !entry.notified) {
     entry.notified = true;
     sendAvailabilityPush(accountId).finally(() => {});
-    stopTimer(accountId, false);
+    stopTimer(accountId, true);
   }
 }
 
@@ -438,7 +440,7 @@ function renderControlPage() {
     </head>
     <body>
       <h1>Claude Control Browser</h1>
-      <p>Five panes auto-launch Claude; the sixth opens ChatGPT by default for verification/manual work.</p>
+      <p>Eight panes in a 4x2 grid: 5 Claude sessions (3 Code, 2 Workspace), 2 ChatGPT sessions, and 1 Gemini session for diversified AI access and verification.</p>
       <form id="nav-form" class="card">
         <h2>Navigation</h2>
         <label for="account">Target pane</label>
@@ -446,7 +448,7 @@ function renderControlPage() {
 
         <label for="url">URL to open</label>
         <input id="url" name="url" type="url" placeholder="https://example.com" required />
-        <div class="hint">History controls work per pane. Pane ${VERIFICATION_VIEW_ID} starts on ChatGPT and keeps its own cookies/tokens.</div>
+        <div class="hint">History controls work per pane. Each pane maintains separate cookies/tokens for independent sessions.</div>
 
         <button type="submit">Open URL</button>
       </form>

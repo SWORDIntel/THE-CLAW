@@ -22,7 +22,7 @@ function createAccountViews() {
 
 function layoutViewsInGrid(mainWindow, views) {
   const [winWidth, winHeight] = mainWindow.getContentSize();
-  const cols = 3;
+  const cols = 4;
   const rows = 2;
 
   const cellW = Math.floor(winWidth / cols);
