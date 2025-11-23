@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require("electron");
+const { app, BrowserWindow, session } = require("electron");
 const http = require("http");
 const https = require("https");
 const {
@@ -7,7 +7,13 @@ const {
   MIN_WINDOW_WIDTH,
   MIN_WINDOW_HEIGHT,
   MAX_TIMER_WINDOW_DAYS,
-  DEFAULT_PUSHBULLET_TOKEN
+  DEFAULT_PUSHBULLET_TOKEN,
+  TEMPEST_DARK_THEME_CSS,
+  MAIL_POPUP_URL,
+  MAIL_POPUP_PARTITION,
+  EMAIL_LOGIN_SELECTORS,
+  EMAIL_LOGIN_TEXT_MATCHES,
+  CHROME_USER_AGENT
 } = require("./config");
 const { createAccountViews, layoutViewsInGrid, getViewByAccountId } = require("./layout");
 
@@ -16,8 +22,96 @@ app.commandLine.appendSwitch("ozone-platform-hint", "auto");
 app.commandLine.appendSwitch("enable-wayland-ime");
 
 let mainWindow;
+let mailWindow;
 let views = [];
 const timers = new Map();
+
+function attachTempestTheme(webContents) {
+  if (typeof webContents.setColorScheme === "function") {
+    try {
+      webContents.setColorScheme("dark");
+    } catch (_) {}
+  }
+  if (TEMPEST_DARK_THEME_CSS) {
+    webContents.insertCSS(TEMPEST_DARK_THEME_CSS).catch(() => {});
+  }
+}
+
+function injectEmailLoginHelper(webContents) {
+  const selectors = JSON.stringify(EMAIL_LOGIN_SELECTORS || []);
+  const textMatches = JSON.stringify((EMAIL_LOGIN_TEXT_MATCHES || []).map((t) => t.toLowerCase()));
+  const mailUrl = MAIL_POPUP_URL;
+  const script = `(function(){
+    if (window.__claw_email_helper_installed) return;
+    window.__claw_email_helper_installed = true;
+    const selectors = ${selectors};
+    const textMatches = ${textMatches};
+    function matchesTarget(el){
+      if(!el) return false;
+      if (selectors.some((sel) => { try { return el.closest(sel); } catch (_) { return false; } })) return true;
+      const btn = el.closest('button, a, input[type="button"], input[type="submit"]');
+      if(!btn) return false;
+      const txt = (btn.innerText || btn.textContent || '').toLowerCase();
+      return textMatches.some((needle) => txt.includes(needle));
+    }
+    function handleClick(ev){
+      const target = ev.target;
+      if (matchesTarget(target)) {
+        window.open('${mailUrl}', '_blank', 'noopener');
+      }
+    }
+    document.addEventListener('click', handleClick, true);
+  })();`;
+  webContents.executeJavaScript(script).catch(() => {});
+}
+
+function attachContentHelpers(webContents) {
+  const applyHelpers = () => {
+    attachTempestTheme(webContents);
+    injectEmailLoginHelper(webContents);
+  };
+  webContents.on("did-finish-load", applyHelpers);
+}
+
+function ensureMailPopup(targetUrl) {
+  const normalized = safeNormalizeUrl(targetUrl) || MAIL_POPUP_URL;
+  if (mailWindow && !mailWindow.isDestroyed()) {
+    mailWindow.loadURL(normalized);
+    mailWindow.show();
+    mailWindow.focus();
+    return mailWindow;
+  }
+
+  mailWindow = new BrowserWindow({
+    width: 960,
+    height: 720,
+    title: "Mail Login",
+    autoHideMenuBar: true,
+    webPreferences: {
+      session: session.fromPartition(MAIL_POPUP_PARTITION)
+    }
+  });
+
+  if (CHROME_USER_AGENT) {
+    mailWindow.webContents.setUserAgent(CHROME_USER_AGENT);
+  }
+  attachContentHelpers(mailWindow.webContents);
+  mailWindow.loadURL(normalized);
+  mailWindow.on("closed", () => {
+    mailWindow = null;
+  });
+  return mailWindow;
+}
+
+function bindWindowOpenHandler(webContents) {
+  webContents.setWindowOpenHandler(({ url }) => {
+    if (url && url.startsWith(MAIL_POPUP_URL)) {
+      ensureMailPopup(url);
+      return { action: "deny" };
+    }
+    return { action: "allow" };
+  });
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -30,6 +124,10 @@ function createWindow() {
   });
 
   views = createAccountViews();
+  views.forEach(({ view }) => {
+    attachContentHelpers(view.webContents);
+    bindWindowOpenHandler(view.webContents);
+  });
   layoutViewsInGrid(mainWindow, views);
 
   mainWindow.on("resize", () => {
@@ -96,6 +194,8 @@ function navigateHistory(accountId, direction) {
 function renderTimerOverlay(accountId, display, flashing) {
   const target = getViewByAccountId(views, accountId);
   if (!target) return;
+  const safeDisplay = JSON.stringify(display || "");
+  const flashingLiteral = flashing ? "true" : "false";
   const script = `(function(){
     const existing = document.getElementById('__claw_timer_overlay');
     const styleId = '__claw_timer_overlay_style';
@@ -121,19 +221,31 @@ function renderTimerOverlay(accountId, display, flashing) {
     root.style.fontWeight = '700';
     root.style.border = '2px solid #0ff';
     root.style.borderRadius = '10px';
-    root.style.zIndex = '2147483647';
-    root.style.boxShadow = '0 0 12px rgba(0,255,255,0.6)';
-    root.style.minWidth = '180px';
-    root.style.textAlign = 'center';
+    root.style.zIndex = 2147483647;
     root.style.cursor = 'move';
-    root.classList.toggle('claw-flash', ${flashing});
-    root.innerHTML = '<div style="font-size:13px;opacity:0.8;">Countdown</div><div>' + ${JSON.stringify(
-      display
-    )} + '</div>';
+    root.textContent = 'Timer: ' + ${safeDisplay};
+    if (${flashingLiteral}) { root.classList.add('claw-flash'); } else { root.classList.remove('claw-flash'); }
 
-    if(!existing){
+    if (!existing) {
+      let isDown = false;
+      let offset = { x: 0, y: 0 };
       root.addEventListener('mousedown', (e) => {
-        e.preventDefault();
+        isDown = true;
+        offset = { x: root.offsetLeft - e.clientX, y: root.offsetTop - e.clientY };
+      });
+      document.addEventListener('mouseup', () => { isDown = false; });
+      document.addEventListener('mousemove', (event) => {
+        event.preventDefault();
+        if (!isDown) return;
+        root.style.left = event.clientX + offset.x + 'px';
+        root.style.top = event.clientY + offset.y + 'px';
+        root.style.right = 'auto';
+      });
+      root.addEventListener('dragstart', (e) => e.preventDefault());
+    }
+
+    if (!existing) {
+      root.addEventListener('mousedown', (e) => {
         let startX = e.clientX;
         let startY = e.clientY;
         const rect = root.getBoundingClientRect();
@@ -158,6 +270,8 @@ function renderTimerOverlay(accountId, display, flashing) {
   })();`;
   target.view.webContents.executeJavaScript(script).catch(() => {});
 }
+
+
 
 function clearTimerOverlay(accountId) {
   const target = getViewByAccountId(views, accountId);
@@ -360,6 +474,12 @@ function renderControlPage() {
           <button type="button" id="cancel-timer">Stop & hide timer</button>
         </div>
       </form>
+
+      <div class="card">
+        <h2>Login with email helper</h2>
+        <p>When a page shows a "login with email" or configured selector, a dedicated mail pop-up opens to ${MAIL_POPUP_URL} for one-click verification.</p>
+        <div class="hint">Adjust selectors via EMAIL_LOGIN_SELECTORS or EMAIL_LOGIN_TEXT_MATCHES environment variables if sites use custom markup.</div>
+      </div>
 
       <script>
         const form = document.getElementById('nav-form');
