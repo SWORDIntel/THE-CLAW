@@ -2,7 +2,7 @@
 
 This repo wires the provided specs into runnable starter projects:
 
-- **claude-control-browser**: Electron window with 6 isolated panes (5 Claude-ready, 1 ChatGPT/verification), plus a control server for `/open-auth` requests, manual URL launch, per-pane back/forward/reload controls, and a pane-level countdown overlay with Pushbullet alerts.
+- **claude-control-browser**: Electron window with 8 isolated panes (7 Claude-ready, 1 ChatGPT/verification), plus a control server for `/open-auth` requests, manual URL launch, per-pane back/forward/reload controls, and a pane-level countdown overlay with Pushbullet alerts.
 - **claude-auth-router**: Axum-based OAuth router that coordinates token requests and drives the control browser.
 - **claude-auth-client**: Blocking Rust helper to call the router with per-account token caching.
 
@@ -22,7 +22,7 @@ Pushbullet alerts default to the provided token; override by exporting `PUSHBULL
    npm install
    npm start
    ```
-   Launches a 3x2 grid (five Claude Code/Workspace panes preloaded with Claude; sixth opens ChatGPT and keeps a clean, persistent session). A helper page lives at `http://127.0.0.1:7780/` so you can pick a pane, send any URL, drive history, or attach a timer overlay without crafting requests by hand. All panes force a TEMPEST CLASS C dark theme for better contrast and auto-open a dedicated mail pop-up to Gmail (configurable) whenever a "login with email" control is clicked.
+   Launches a 4x2 grid (seven Claude Code/Workspace panes preloaded with Claude; the eighth opens ChatGPT and keeps a clean, persistent session). A helper page lives at `http://127.0.0.1:7780/` so you can pick a pane, send any URL, drive history, or attach a timer overlay without crafting requests by hand. You can also right-click directly in any pane to open a manual URL prompt or toggle a lightweight inline URL bar. All panes force a TEMPEST CLASS C dark theme for better contrast and auto-open a dedicated mail pop-up to Gmail (configurable) whenever a "login with email" control is clicked.
 
    HTTP listener (loopback only):
    - `GET /` → simple form to open URLs and navigate history for any pane
@@ -63,7 +63,7 @@ Pushbullet alerts default to the provided token; override by exporting `PUSHBULL
 
 ## Notes
 
-- Control browser binds to loopback only and keeps each employee in an isolated `partition` session. Pane 6 starts on ChatGPT and retains its cookies/tokens until cleared. The main window enforces a minimum of 1128x1024 and the overlay timer can be dragged for comfortable viewing. All panes (and the mail pop-up) apply a TEMPEST CLASS C dark theme CSS on load.
+- Control browser binds to loopback only and keeps each employee in an isolated `partition` session. Pane 8 starts on ChatGPT and retains its cookies/tokens until cleared. The main window enforces a minimum of 1128x1024 and the overlay timer can be dragged for comfortable viewing. All panes (and the mail pop-up) apply a TEMPEST CLASS C dark theme CSS on load.
 - Email login helper: clicking a "login with email" button opens a dedicated Gmail pop-up using its own persisted partition. Override with `MAIL_POPUP_URL`, `EMAIL_LOGIN_SELECTORS`, or `EMAIL_LOGIN_TEXT_MATCHES` to target your own provider/markup.
 - Router and client use JSON over HTTP with serde-friendly types.
 - Token exchange currently uses the configured OAuth endpoints via `reqwest` with Rustls.
