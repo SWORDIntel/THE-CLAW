@@ -17,6 +17,11 @@ const {
 } = require("./config");
 const { createAccountViews, layoutViewsInGrid, getViewByAccountId } = require("./layout");
 
+// Disable sandbox to support environments without user namespaces (e.g. some containers).
+app.commandLine.appendSwitch("no-sandbox");
+app.commandLine.appendSwitch("disable-setuid-sandbox");
+app.commandLine.appendSwitch("disable-gpu-sandbox");
+app.commandLine.appendSwitch("disable-seccomp-filter-sandbox");
 app.commandLine.appendSwitch("enable-features", "WaylandWindowDecorations");
 app.commandLine.appendSwitch("ozone-platform-hint", "auto");
 app.commandLine.appendSwitch("enable-wayland-ime");
