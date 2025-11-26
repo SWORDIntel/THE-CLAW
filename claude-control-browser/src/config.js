@@ -1,6 +1,6 @@
 // Logical accounts (employees) mapped to Electron session partitions
-const DEFAULT_TARGET_URL = "https://claude.ai";
-const CLAUDE_CODE_URL = "https://claude.ai/new?mode=code";
+const DEFAULT_TARGET_URL = "https://claude.ai/code";
+const CLAUDE_CODE_URL = "https://claude.ai/code";
 const CHATGPT_URL = "https://chatgpt.com";
 const GEMINI_URL = "https://gemini.google.com";
 const MAIL_POPUP_URL = process.env.MAIL_POPUP_URL || "https://mail.google.com/";
