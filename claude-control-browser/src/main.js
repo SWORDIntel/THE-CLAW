@@ -167,12 +167,32 @@ function bindContextMenu(entry) {
   const { view, account } = entry;
   view.webContents.on("context-menu", (event) => {
     event.preventDefault();
-    const menu = Menu.buildFromTemplate([
+    const menuTemplate = [
       { label: `Open URL in ${account.name}...`, click: () => promptAndOpenUrl(entry) },
-      { label: "Toggle inline URL bar", click: () => toggleInlineUrlBar(view.webContents, account.name) },
+      { label: "Toggle inline URL bar", click: () => toggleInlineUrlBar(view.webContents, account.name) }
+    ];
+
+    // Add Claude-specific menu items for all except ChatGPT (account 8)
+    if (account.id !== 8) {
+      menuTemplate.push(
+        { type: "separator" },
+        {
+          label: "Go to Claude Code",
+          click: () => view.webContents.loadURL("https://claude.ai/code")
+        },
+        {
+          label: "Go to Settings/Usage",
+          click: () => view.webContents.loadURL("https://claude.ai/settings/usage")
+        }
+      );
+    }
+
+    menuTemplate.push(
       { type: "separator" },
       { label: "Reload", click: () => view.webContents.reload() }
-    ]);
+    );
+
+    const menu = Menu.buildFromTemplate(menuTemplate);
     menu.popup({ window: mainWindow });
   });
 }
