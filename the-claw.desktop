@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=THE-CLAW
+Comment=Claude Control Browser - Multi-pane browser for managing multiple Claude instances
+Exec=sh -c 'cd "$(dirname %k)" && ./start.sh > /dev/null 2>&1 &'
+Icon=browser
+Categories=Development;Utility;
+Terminal=false
+StartupNotify=true
