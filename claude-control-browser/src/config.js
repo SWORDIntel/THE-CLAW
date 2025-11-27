@@ -10,17 +10,14 @@ const CHROME_USER_AGENT =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
 
 const ACCOUNTS = [
-  { id: 1, name: "Claude Code #1", partition: "persist:claude-code-1", startupUrl: CLAUDE_CODE_URL },
-  { id: 2, name: "Claude Code #2", partition: "persist:claude-code-2", startupUrl: CLAUDE_CODE_URL },
-  { id: 3, name: "Claude Code #3", partition: "persist:claude-code-3", startupUrl: CLAUDE_CODE_URL },
-  { id: 4, name: "Claude Code #4", partition: "persist:claude-code-4", startupUrl: CLAUDE_CODE_URL },
-  { id: 5, name: "Claude Workspace #5", partition: "persist:claude-workspace-5", startupUrl: DEFAULT_TARGET_URL },
-  { id: 6, name: "Claude Workspace #6", partition: "persist:claude-workspace-6", startupUrl: DEFAULT_TARGET_URL },
-  { id: 7, name: "Claude Workspace #7", partition: "persist:claude-workspace-7", startupUrl: DEFAULT_TARGET_URL },
-  { id: 8, name: "ChatGPT #8", partition: "persist:chatgpt-8", startupUrl: CHATGPT_URL }
+  { id: 1, name: "user1@leantwin.org", partition: "persist:claude-code-1", startupUrl: CLAUDE_CODE_URL },
+  { id: 2, name: "user2@leantwin.org", partition: "persist:claude-code-2", startupUrl: CLAUDE_CODE_URL },
+  { id: 3, name: "user3@leantwin.org", partition: "persist:claude-code-3", startupUrl: CLAUDE_CODE_URL },
+  { id: 4, name: "user4@leantwin.org", partition: "persist:claude-code-4", startupUrl: CLAUDE_CODE_URL },
+  { id: 5, name: "user5@leantwin.org", partition: "persist:claude-code-5", startupUrl: CLAUDE_CODE_URL }
 ];
 
-const VERIFICATION_VIEW_ID = 8;
+const VERIFICATION_VIEW_ID = 5;
 
 const MIN_WINDOW_WIDTH = 1128;
 const MIN_WINDOW_HEIGHT = 1024;

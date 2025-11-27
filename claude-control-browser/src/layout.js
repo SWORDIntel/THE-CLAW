@@ -37,20 +37,33 @@ function createAccountViews() {
 
 function layoutViewsInGrid(mainWindow, views) {
   const [winWidth, winHeight] = mainWindow.getContentSize();
-  const cols = 4;
-  const rows = 2;
 
-  const cellW = Math.floor(winWidth / cols);
-  const cellH = Math.floor(winHeight / rows);
+  // 5 panels: 3 on top row, 2 on bottom row
+  const topRowCount = 3;
+  const bottomRowCount = 2;
+  const rowHeight = Math.floor(winHeight / 2);
 
   views.forEach((entry, index) => {
-    const col = index % cols;
-    const row = Math.floor(index / cols);
+    let x, y, width, height;
 
-    const x = col * cellW;
-    const y = row * cellH;
+    if (index < topRowCount) {
+      // Top row: 3 panels
+      const cellWidth = Math.floor(winWidth / topRowCount);
+      x = index * cellWidth;
+      y = 0;
+      width = cellWidth;
+      height = rowHeight;
+    } else {
+      // Bottom row: 2 panels
+      const cellWidth = Math.floor(winWidth / bottomRowCount);
+      const bottomIndex = index - topRowCount;
+      x = bottomIndex * cellWidth;
+      y = rowHeight;
+      width = cellWidth;
+      height = rowHeight;
+    }
 
-    entry.view.setBounds({ x, y, width: cellW, height: cellH });
+    entry.view.setBounds({ x, y, width, height });
     entry.view.setAutoResize({ width: true, height: true });
     mainWindow.addBrowserView(entry.view);
   });
