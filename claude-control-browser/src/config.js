@@ -10,14 +10,14 @@ const CHROME_USER_AGENT =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
 
 const ACCOUNTS = [
-  { id: 1, name: "Claude Code #1", partition: "persist:claude-code-1", startupUrl: CLAUDE_CODE_URL },
-  { id: 2, name: "Claude Code #2", partition: "persist:claude-code-2", startupUrl: CLAUDE_CODE_URL },
-  { id: 3, name: "Claude Code #3", partition: "persist:claude-code-3", startupUrl: CLAUDE_CODE_URL },
-  { id: 4, name: "Claude Code #4", partition: "persist:claude-code-4", startupUrl: CLAUDE_CODE_URL },
-  { id: 5, name: "Claude Workspace #5", partition: "persist:claude-workspace-5", startupUrl: DEFAULT_TARGET_URL },
-  { id: 6, name: "Claude Workspace #6", partition: "persist:claude-workspace-6", startupUrl: DEFAULT_TARGET_URL },
-  { id: 7, name: "Claude Workspace #7", partition: "persist:claude-workspace-7", startupUrl: DEFAULT_TARGET_URL },
-  { id: 8, name: "ChatGPT #8", partition: "persist:chatgpt-8", startupUrl: CHATGPT_URL }
+  { id: 1, name: "Claude Code #1", partition: "persist:claude-code-1", startupUrl: CLAUDE_CODE_URL, prefillEmail: "hacker@leantwin.org" },
+  { id: 2, name: "Claude Code #2", partition: "persist:claude-code-2", startupUrl: CLAUDE_CODE_URL, prefillEmail: "hacker1@leantwin.org" },
+  { id: 3, name: "Claude Code #3", partition: "persist:claude-code-3", startupUrl: CLAUDE_CODE_URL, prefillEmail: "hacker3@leantwin.org" },
+  { id: 4, name: "Claude Code #4", partition: "persist:claude-code-4", startupUrl: CLAUDE_CODE_URL, prefillEmail: "" },
+  { id: 5, name: "Claude Workspace #5", partition: "persist:claude-workspace-5", startupUrl: DEFAULT_TARGET_URL, prefillEmail: "john@leantwin.org" },
+  { id: 6, name: "Claude Workspace #6", partition: "persist:claude-workspace-6", startupUrl: DEFAULT_TARGET_URL, prefillEmail: "hacker4@leantwin.org" },
+  { id: 7, name: "Claude Workspace #7", partition: "persist:claude-workspace-7", startupUrl: DEFAULT_TARGET_URL, prefillEmail: "" },
+  { id: 8, name: "ChatGPT #8", partition: "persist:chatgpt-8", startupUrl: CHATGPT_URL, prefillEmail: "" }
 ];
 
 const VERIFICATION_VIEW_ID = 8;

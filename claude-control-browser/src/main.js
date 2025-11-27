@@ -26,6 +26,14 @@ app.commandLine.appendSwitch("enable-features", "WaylandWindowDecorations");
 app.commandLine.appendSwitch("ozone-platform-hint", "auto");
 app.commandLine.appendSwitch("enable-wayland-ime");
 
+// Performance optimizations for 6 concurrent browser windows
+app.commandLine.appendSwitch("enable-gpu-rasterization");
+app.commandLine.appendSwitch("enable-oop-rasterization");
+app.commandLine.appendSwitch("renderer-process-limit", "6");
+app.commandLine.appendSwitch("disable-renderer-backgrounding");
+app.commandLine.appendSwitch("disable-ipc-flooding-protection");
+app.commandLine.appendSwitch("disable-backgrounding-occluded-windows");
+
 let mainWindow;
 let mailWindow;
 let views = [];
@@ -70,10 +78,47 @@ function injectEmailLoginHelper(webContents) {
   webContents.executeJavaScript(script).catch(() => {});
 }
 
-function attachContentHelpers(webContents) {
+function injectEmailPrefill(webContents, prefillEmail) {
+  if (!prefillEmail) return;
+  const email = JSON.stringify(prefillEmail);
+  const script = `(function(){
+    if (window.__claw_email_prefill_installed) return;
+    window.__claw_email_prefill_installed = true;
+    const email = ${email};
+    function prefillEmailFields() {
+      const emailSelectors = [
+        'input[type="email"]',
+        'input[type="text"][name*="email" i]',
+        'input[id*="email" i]',
+        'input[placeholder*="email" i]',
+        'input[aria-label*="email" i]'
+      ];
+      emailSelectors.forEach(selector => {
+        const fields = document.querySelectorAll(selector);
+        fields.forEach(field => {
+          if (!field.value && !field.disabled) {
+            field.value = email;
+            field.dispatchEvent(new Event('input', { bubbles: true }));
+            field.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        });
+      });
+    }
+    prefillEmailFields();
+    document.addEventListener('load', prefillEmailFields, true);
+    const observer = new MutationObserver(prefillEmailFields);
+    observer.observe(document.body, { childList: true, subtree: true });
+  })();`;
+  webContents.executeJavaScript(script).catch(() => {});
+}
+
+function attachContentHelpers(webContents, prefillEmail) {
   const applyHelpers = () => {
     attachTempestTheme(webContents);
     injectEmailLoginHelper(webContents);
+    if (prefillEmail) {
+      injectEmailPrefill(webContents, prefillEmail);
+    }
   };
   webContents.on("did-finish-load", applyHelpers);
 }
@@ -144,7 +189,7 @@ function createWindow() {
 
   views = createAccountViews();
   views.forEach((entry) => {
-    attachContentHelpers(entry.view.webContents);
+    attachContentHelpers(entry.view.webContents, entry.account.prefillEmail);
     bindWindowOpenHandler(entry.view.webContents);
     bindContextMenu(entry);
   });
