@@ -21,6 +21,9 @@ function createAccountViews() {
     const startUrl = acc.startupUrl || DEFAULT_TARGET_URL || "about:blank";
     view.webContents.loadURL(startUrl);
 
+    // Store email prefill configuration
+    view.webContents.prefillEmail = acc.prefillEmail || "";
+
     // Store VPN assignment info
     const vpnInfo = vpnAssignments[acc.id];
     if (vpnInfo) {

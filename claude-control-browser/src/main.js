@@ -26,6 +26,14 @@ app.commandLine.appendSwitch("enable-features", "WaylandWindowDecorations");
 app.commandLine.appendSwitch("ozone-platform-hint", "auto");
 app.commandLine.appendSwitch("enable-wayland-ime");
 
+// Performance optimizations for 6 concurrent browser windows
+app.commandLine.appendSwitch("enable-gpu-rasterization");
+app.commandLine.appendSwitch("enable-oop-rasterization");
+app.commandLine.appendSwitch("renderer-process-limit", "6");
+app.commandLine.appendSwitch("disable-renderer-backgrounding");
+app.commandLine.appendSwitch("disable-ipc-flooding-protection");
+app.commandLine.appendSwitch("disable-backgrounding-occluded-windows");
+
 let mainWindow;
 let mailWindow;
 let views = [];
@@ -172,6 +180,46 @@ function attachContentHelpers(webContents, accountName) {
     injectEmailLoginHelper(webContents);
     if (accountName) {
       injectNavigationUI(webContents, accountName);
+function injectEmailPrefill(webContents, prefillEmail) {
+  if (!prefillEmail) return;
+  const email = JSON.stringify(prefillEmail);
+  const script = `(function(){
+    if (window.__claw_email_prefill_installed) return;
+    window.__claw_email_prefill_installed = true;
+    const email = ${email};
+    function prefillEmailFields() {
+      const emailSelectors = [
+        'input[type="email"]',
+        'input[type="text"][name*="email" i]',
+        'input[id*="email" i]',
+        'input[placeholder*="email" i]',
+        'input[aria-label*="email" i]'
+      ];
+      emailSelectors.forEach(selector => {
+        const fields = document.querySelectorAll(selector);
+        fields.forEach(field => {
+          if (!field.value && !field.disabled) {
+            field.value = email;
+            field.dispatchEvent(new Event('input', { bubbles: true }));
+            field.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        });
+      });
+    }
+    prefillEmailFields();
+    document.addEventListener('load', prefillEmailFields, true);
+    const observer = new MutationObserver(prefillEmailFields);
+    observer.observe(document.body, { childList: true, subtree: true });
+  })();`;
+  webContents.executeJavaScript(script).catch(() => {});
+}
+
+function attachContentHelpers(webContents, prefillEmail) {
+  const applyHelpers = () => {
+    attachTempestTheme(webContents);
+    injectEmailLoginHelper(webContents);
+    if (prefillEmail) {
+      injectEmailPrefill(webContents, prefillEmail);
     }
   };
   webContents.on("did-finish-load", applyHelpers);
@@ -221,12 +269,32 @@ function bindContextMenu(entry) {
   const { view, account } = entry;
   view.webContents.on("context-menu", (event) => {
     event.preventDefault();
-    const menu = Menu.buildFromTemplate([
+    const menuTemplate = [
       { label: `Open URL in ${account.name}...`, click: () => promptAndOpenUrl(entry) },
-      { label: "Toggle inline URL bar", click: () => toggleInlineUrlBar(view.webContents, account.name) },
+      { label: "Toggle inline URL bar", click: () => toggleInlineUrlBar(view.webContents, account.name) }
+    ];
+
+    // Add Claude-specific menu items for all except ChatGPT (account 8)
+    if (account.id !== 8) {
+      menuTemplate.push(
+        { type: "separator" },
+        {
+          label: "Go to Claude Code",
+          click: () => view.webContents.loadURL("https://claude.ai/code")
+        },
+        {
+          label: "Go to Settings/Usage",
+          click: () => view.webContents.loadURL("https://claude.ai/settings/usage")
+        }
+      );
+    }
+
+    menuTemplate.push(
       { type: "separator" },
       { label: "Reload", click: () => view.webContents.reload() }
-    ]);
+    );
+
+    const menu = Menu.buildFromTemplate(menuTemplate);
     menu.popup({ window: mainWindow });
   });
 }
@@ -244,6 +312,7 @@ function createWindow() {
   views = createAccountViews();
   views.forEach((entry) => {
     attachContentHelpers(entry.view.webContents, entry.account.name);
+    attachContentHelpers(entry.view.webContents, entry.account.prefillEmail);
     bindWindowOpenHandler(entry.view.webContents);
     bindContextMenu(entry);
   });

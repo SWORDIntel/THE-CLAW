@@ -1,0 +1,129 @@
+#!/bin/bash
+# THE-CLAW Profile Selector
+# Interactive menu to select and launch specific profiles
+# Usage: ./profile-selector
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# Profile definitions from config.js
+declare -A PROFILES=(
+    [1]="Claude Code #1"
+    [2]="Claude Code #2"
+    [3]="Claude Code #3"
+    [4]="Claude Code #4"
+    [5]="Claude Workspace #5"
+    [6]="Claude Workspace #6"
+    [7]="Claude Workspace #7"
+    [8]="ChatGPT #8"
+)
+
+# Auto-bootstrap first
+if [ ! -d "$SCRIPT_DIR/claude-control-browser/node_modules" ] || [ ! -f "$SCRIPT_DIR/claude-control-browser/node_modules/electron/index.js" ]; then
+    echo "📦 Auto-bootstrapping dependencies..."
+    if ! ./bootstrap.sh > /tmp/claw-bootstrap.log 2>&1; then
+        echo "❌ Auto-bootstrap failed"
+        exit 1
+    fi
+fi
+
+show_menu() {
+    echo ""
+    echo "╔════════════════════════════════════════════════════╗"
+    echo "║         THE-CLAW Profile Selector                 ║"
+    echo "╚════════════════════════════════════════════════════╝"
+    echo ""
+    echo "📋 Available Profiles:"
+    echo ""
+    echo "  1) ${PROFILES[1]}"
+    echo "  2) ${PROFILES[2]}"
+    echo "  3) ${PROFILES[3]}"
+    echo "  4) ${PROFILES[4]}"
+    echo "  5) ${PROFILES[5]}"
+    echo "  6) ${PROFILES[6]}"
+    echo "  7) ${PROFILES[7]}"
+    echo "  8) ${PROFILES[8]}"
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "  A) Launch All (1-8) - Full 4x2 grid"
+    echo "  C) Launch Claude Only (1-7)"
+    echo "  G) Launch GPT Verification (8)"
+    echo ""
+    echo "  T) Launch with Timer"
+    echo "  V) Open Control Server (http://127.0.0.1:7780/)"
+    echo ""
+    echo "  Q) Quit"
+    echo ""
+}
+
+launch_profiles() {
+    local profiles=$1
+    local mode=${2:-"background"}
+
+    export CLAW_PROFILES="$profiles"
+
+    if [ "$mode" = "foreground" ]; then
+        cd "$SCRIPT_DIR/claude-control-browser"
+        exec npm start
+    else
+        cd "$SCRIPT_DIR"
+        LOG_FILE="/tmp/claw-$(date +%s).log"
+        nohup ./start.sh > "$LOG_FILE" 2>&1 &
+        PID=$!
+        echo ""
+        echo "✅ THE-CLAW is starting (PID: $PID)..."
+        echo "📝 Logs: $LOG_FILE"
+        echo "🌐 Control Server: http://127.0.0.1:7780/"
+        echo ""
+        echo "To stop: kill $PID"
+    fi
+}
+
+open_control_server() {
+    echo ""
+    echo "Opening THE-CLAW Control Server..."
+    echo "🌐 URL: http://127.0.0.1:7780/"
+    echo ""
+
+    # Try different methods to open browser
+    if command -v xdg-open &> /dev/null; then
+        xdg-open "http://127.0.0.1:7780/" &
+    elif command -v open &> /dev/null; then
+        open "http://127.0.0.1:7780/" &
+    else
+        echo "Please open http://127.0.0.1:7780/ in your browser"
+    fi
+}
+
+# Main loop
+while true; do
+    show_menu
+
+    read -p "Choose an option (1-8, A, C, G, T, V, Q): " choice
+
+    case "$choice" in
+        1) export CLAW_PROFILES=1; launch_profiles "1" ;;
+        2) export CLAW_PROFILES=2; launch_profiles "2" ;;
+        3) export CLAW_PROFILES=3; launch_profiles "3" ;;
+        4) export CLAW_PROFILES=4; launch_profiles "4" ;;
+        5) export CLAW_PROFILES=5; launch_profiles "5" ;;
+        6) export CLAW_PROFILES=6; launch_profiles "6" ;;
+        7) export CLAW_PROFILES=7; launch_profiles "7" ;;
+        8) export CLAW_PROFILES=8; launch_profiles "8" ;;
+        A|a) launch_profiles "1-8" ;;
+        C|c) launch_profiles "1-7" ;;
+        G|g) launch_profiles "8" ;;
+        T|t)
+            echo "Timer feature - set countdown for completion of task"
+            read -p "Enter target date/time (e.g., 2025-11-29T18:00): " target_time
+            export CLAW_TIMER="$target_time"
+            launch_profiles "1-8"
+            ;;
+        V|v) open_control_server ;;
+        Q|q) echo "Goodbye! 👋"; exit 0 ;;
+        *) echo "❌ Invalid option. Please try again." ;;
+    esac
+
+    read -p "Press Enter to continue..."
+done

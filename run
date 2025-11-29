@@ -1,0 +1,67 @@
+#!/bin/bash
+# THE-CLAW Universal Launcher
+# Automatically detects platform and runs appropriate launcher
+# Usage:
+#   ./run                    - Launch all profiles in background
+#   ./run start              - Launch all profiles in foreground
+#   ./run profile            - Interactive profile selector
+#   ./run profile 1          - Launch profile 1
+#   ./run profile 1-7        - Launch profiles 1-7
+#   ./run profile claude     - Launch Claude profiles (1-7)
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# Parse arguments
+ACTION="${1:-launch}"
+PROFILE="${2:-all}"
+
+# Determine platform
+OS="$(uname -s)"
+
+case "$OS" in
+    Linux*|Darwin*)
+        # Unix-like systems (Linux, macOS)
+        case "$ACTION" in
+            profile|selector|select|p)
+                # Profile selector mode
+                exec ./profile-selector
+                ;;
+            start|fg|foreground)
+                # Run in foreground with logs
+                export CLAW_PROFILES="${PROFILE}"
+                exec ./start.sh
+                ;;
+            *)
+                # Run in background (default)
+                export CLAW_PROFILES="${PROFILE}"
+                exec ./launch.sh
+                ;;
+        esac
+        ;;
+    MINGW*|MSYS*|CYGWIN*)
+        # Windows with Git Bash or similar
+        case "$ACTION" in
+            profile|selector|select|p)
+                cmd /c profile-selector.bat
+                ;;
+            start|fg|foreground)
+                cmd /c set CLAW_PROFILES=$PROFILE ^& start.bat
+                ;;
+            *)
+                cmd /c set CLAW_PROFILES=$PROFILE ^& launch.bat
+                ;;
+        esac
+        ;;
+    *)
+        echo "❌ Unsupported operating system: $OS"
+        echo ""
+        echo "Usage:"
+        echo "  ./run                    - Launch all profiles"
+        echo "  ./run start              - Launch all in foreground"
+        echo "  ./run profile            - Profile selector menu"
+        echo "  ./run profile 1          - Launch profile 1 only"
+        echo "  ./run profile 1-7        - Launch profiles 1-7"
+        exit 1
+        ;;
+esac
