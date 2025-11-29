@@ -1,42 +1,67 @@
 #!/bin/bash
 # THE-CLAW Universal Launcher
 # Automatically detects platform and runs appropriate launcher
-# Usage: ./run  or  ./run start (to start with foreground logs)
+# Usage:
+#   ./run                    - Launch all profiles in background
+#   ./run start              - Launch all profiles in foreground
+#   ./run profile            - Interactive profile selector
+#   ./run profile 1          - Launch profile 1
+#   ./run profile 1-7        - Launch profiles 1-7
+#   ./run profile claude     - Launch Claude profiles (1-7)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Determine platform
-OS="$(uname -s)"
-
 # Parse arguments
 ACTION="${1:-launch}"
+PROFILE="${2:-all}"
+
+# Determine platform
+OS="$(uname -s)"
 
 case "$OS" in
     Linux*|Darwin*)
         # Unix-like systems (Linux, macOS)
-        if [ "$ACTION" = "start" ] || [ "$ACTION" = "fg" ] || [ "$ACTION" = "foreground" ]; then
-            # Run in foreground with logs
-            exec ./start.sh
-        else
-            # Run in background
-            exec ./launch.sh
-        fi
+        case "$ACTION" in
+            profile|selector|select|p)
+                # Profile selector mode
+                exec ./profile-selector
+                ;;
+            start|fg|foreground)
+                # Run in foreground with logs
+                export CLAW_PROFILES="${PROFILE}"
+                exec ./start.sh
+                ;;
+            *)
+                # Run in background (default)
+                export CLAW_PROFILES="${PROFILE}"
+                exec ./launch.sh
+                ;;
+        esac
         ;;
     MINGW*|MSYS*|CYGWIN*)
         # Windows with Git Bash or similar
-        if [ "$ACTION" = "start" ] || [ "$ACTION" = "fg" ] || [ "$ACTION" = "foreground" ]; then
-            cmd /c start.sh
-        else
-            cmd /c launch.bat
-        fi
+        case "$ACTION" in
+            profile|selector|select|p)
+                cmd /c profile-selector.bat
+                ;;
+            start|fg|foreground)
+                cmd /c set CLAW_PROFILES=$PROFILE ^& start.bat
+                ;;
+            *)
+                cmd /c set CLAW_PROFILES=$PROFILE ^& launch.bat
+                ;;
+        esac
         ;;
     *)
         echo "❌ Unsupported operating system: $OS"
         echo ""
-        echo "Please use:"
-        echo "  Linux/macOS:  ./start.sh  or  ./launch.sh"
-        echo "  Windows:      bootstrap.bat  and  launch.bat"
+        echo "Usage:"
+        echo "  ./run                    - Launch all profiles"
+        echo "  ./run start              - Launch all in foreground"
+        echo "  ./run profile            - Profile selector menu"
+        echo "  ./run profile 1          - Launch profile 1 only"
+        echo "  ./run profile 1-7        - Launch profiles 1-7"
         exit 1
         ;;
 esac

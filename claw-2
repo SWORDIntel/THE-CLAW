@@ -1,0 +1,14 @@
+#!/bin/bash
+# THE-CLAW: Launch Claude Code #2 Profile
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+if [ ! -d "$SCRIPT_DIR/claude-control-browser/node_modules" ] || [ ! -f "$SCRIPT_DIR/claude-control-browser/node_modules/electron/index.js" ]; then
+    echo "📦 Auto-bootstrapping dependencies..."
+    if ! ./bootstrap.sh > /tmp/claw-bootstrap.log 2>&1; then echo "❌ Auto-bootstrap failed"; exit 1; fi
+fi
+export CLAW_PROFILES=2
+echo "🚀 Launching Claude Code #2..."
+LOG_FILE="/tmp/claw-$(date +%s).log"
+nohup ./start.sh > "$LOG_FILE" 2>&1 &
+PID=$!
+echo "✅ THE-CLAW is starting (PID: $PID) | Logs: $LOG_FILE"
