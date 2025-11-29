@@ -1,0 +1,42 @@
+#!/bin/bash
+# THE-CLAW Universal Launcher
+# Automatically detects platform and runs appropriate launcher
+# Usage: ./run  or  ./run start (to start with foreground logs)
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# Determine platform
+OS="$(uname -s)"
+
+# Parse arguments
+ACTION="${1:-launch}"
+
+case "$OS" in
+    Linux*|Darwin*)
+        # Unix-like systems (Linux, macOS)
+        if [ "$ACTION" = "start" ] || [ "$ACTION" = "fg" ] || [ "$ACTION" = "foreground" ]; then
+            # Run in foreground with logs
+            exec ./start.sh
+        else
+            # Run in background
+            exec ./launch.sh
+        fi
+        ;;
+    MINGW*|MSYS*|CYGWIN*)
+        # Windows with Git Bash or similar
+        if [ "$ACTION" = "start" ] || [ "$ACTION" = "fg" ] || [ "$ACTION" = "foreground" ]; then
+            cmd /c start.sh
+        else
+            cmd /c launch.bat
+        fi
+        ;;
+    *)
+        echo "❌ Unsupported operating system: $OS"
+        echo ""
+        echo "Please use:"
+        echo "  Linux/macOS:  ./start.sh  or  ./launch.sh"
+        echo "  Windows:      bootstrap.bat  and  launch.bat"
+        exit 1
+        ;;
+esac
