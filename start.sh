@@ -1,17 +1,31 @@
 #!/bin/bash
 set -e
 
-echo "🎬 Starting THE-CLAW..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Check if dependencies are installed
-if [ ! -d "claude-control-browser/node_modules" ]; then
-    echo "❌ Dependencies not installed. Running bootstrap first..."
-    ./bootstrap.sh
+echo "🎬 Starting THE-CLAW..."
+echo ""
+
+# Auto-bootstrap: Check if dependencies are installed or corrupted
+if [ ! -d "$SCRIPT_DIR/claude-control-browser/node_modules" ] || [ ! -f "$SCRIPT_DIR/claude-control-browser/node_modules/electron/index.js" ]; then
+    echo "📦 Auto-bootstrapping dependencies..."
+    cd "$SCRIPT_DIR"
+
+    # Run bootstrap script non-interactively if possible
+    if [ -z "$INTERACTIVE" ]; then
+        export INTERACTIVE=0
+    fi
+
+    ./bootstrap.sh || {
+        echo "❌ Auto-bootstrap failed. Please run './bootstrap.sh' manually"
+        exit 1
+    }
 fi
 
 # Start the application with optimizations for 6 concurrent windows
-cd claude-control-browser
+cd "$SCRIPT_DIR/claude-control-browser"
 
+echo ""
 echo "📊 Optimizing performance for 6 concurrent browser windows..."
 echo "   - V8 code caching enabled"
 echo "   - GPU acceleration enabled"
