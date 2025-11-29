@@ -78,6 +78,108 @@ function injectEmailLoginHelper(webContents) {
   webContents.executeJavaScript(script).catch(() => {});
 }
 
+function injectNavigationUI(webContents, accountName) {
+  const script = `(function(){
+    if (window.__claw_nav_ui_installed) return;
+    window.__claw_nav_ui_installed = true;
+
+    const navBar = document.createElement('div');
+    navBar.id = '__claw_nav_bar';
+    navBar.style.position = 'fixed';
+    navBar.style.top = '0';
+    navBar.style.left = '0';
+    navBar.style.right = '0';
+    navBar.style.height = '50px';
+    navBar.style.background = 'linear-gradient(135deg, #1a1f2e 0%, #0d1117 100%)';
+    navBar.style.borderBottom = '2px solid #4fa3ff';
+    navBar.style.zIndex = 2147483647;
+    navBar.style.display = 'flex';
+    navBar.style.alignItems = 'center';
+    navBar.style.justifyContent = 'space-between';
+    navBar.style.padding = '0 16px';
+    navBar.style.boxShadow = '0 4px 12px rgba(0,0,0,0.5)';
+    navBar.style.fontFamily = '"Inter", "Segoe UI", system-ui, sans-serif';
+
+    const username = document.createElement('div');
+    username.textContent = ${JSON.stringify(accountName)};
+    username.style.color = '#4fa3ff';
+    username.style.fontSize = '16px';
+    username.style.fontWeight = '700';
+    username.style.letterSpacing = '0.5px';
+
+    const buttonContainer = document.createElement('div');
+    buttonContainer.style.display = 'flex';
+    buttonContainer.style.gap = '10px';
+
+    const usageBtn = document.createElement('button');
+    usageBtn.textContent = '⚙️ Usage Settings';
+    usageBtn.style.padding = '8px 16px';
+    usageBtn.style.borderRadius = '8px';
+    usageBtn.style.border = '2px solid #4fa3ff';
+    usageBtn.style.background = 'linear-gradient(135deg, #1e3a5f 0%, #0f1f3a 100%)';
+    usageBtn.style.color = '#d8e5ff';
+    usageBtn.style.fontWeight = '700';
+    usageBtn.style.fontSize = '14px';
+    usageBtn.style.cursor = 'pointer';
+    usageBtn.style.transition = 'all 0.2s ease';
+    usageBtn.onmouseover = () => {
+      usageBtn.style.background = 'linear-gradient(135deg, #2a4a7f 0%, #152a4a 100%)';
+      usageBtn.style.transform = 'scale(1.05)';
+    };
+    usageBtn.onmouseout = () => {
+      usageBtn.style.background = 'linear-gradient(135deg, #1e3a5f 0%, #0f1f3a 100%)';
+      usageBtn.style.transform = 'scale(1)';
+    };
+    usageBtn.onclick = () => {
+      window.location.href = 'https://claude.ai/settings/usage';
+    };
+
+    const codeBtn = document.createElement('button');
+    codeBtn.textContent = '💻 Back to Code';
+    codeBtn.style.padding = '8px 16px';
+    codeBtn.style.borderRadius = '8px';
+    codeBtn.style.border = '2px solid #00d98f';
+    codeBtn.style.background = 'linear-gradient(135deg, #1e5f3a 0%, #0f3a1f 100%)';
+    codeBtn.style.color = '#d8ffe5';
+    codeBtn.style.fontWeight = '700';
+    codeBtn.style.fontSize = '14px';
+    codeBtn.style.cursor = 'pointer';
+    codeBtn.style.transition = 'all 0.2s ease';
+    codeBtn.onmouseover = () => {
+      codeBtn.style.background = 'linear-gradient(135deg, #2a7f4a 0%, #154a2a 100%)';
+      codeBtn.style.transform = 'scale(1.05)';
+    };
+    codeBtn.onmouseout = () => {
+      codeBtn.style.background = 'linear-gradient(135deg, #1e5f3a 0%, #0f3a1f 100%)';
+      codeBtn.style.transform = 'scale(1)';
+    };
+    codeBtn.onclick = () => {
+      window.location.href = 'https://claude.ai/code';
+    };
+
+    buttonContainer.appendChild(usageBtn);
+    buttonContainer.appendChild(codeBtn);
+
+    navBar.appendChild(username);
+    navBar.appendChild(buttonContainer);
+
+    document.body.appendChild(navBar);
+
+    // Add padding to body to prevent content from being hidden under nav bar
+    const style = document.createElement('style');
+    style.textContent = 'body { padding-top: 50px !important; }';
+    document.head.appendChild(style);
+  })();`;
+
+  webContents.executeJavaScript(script).catch(() => {});
+}
+
+function attachContentHelpers(webContents, accountName) {
+  const applyHelpers = () => {
+    attachTempestTheme(webContents);
+    injectEmailLoginHelper(webContents);
+    if (accountName) {
+      injectNavigationUI(webContents, accountName);
 function injectEmailPrefill(webContents, prefillEmail) {
   if (!prefillEmail) return;
   const email = JSON.stringify(prefillEmail);
@@ -209,6 +311,7 @@ function createWindow() {
 
   views = createAccountViews();
   views.forEach((entry) => {
+    attachContentHelpers(entry.view.webContents, entry.account.name);
     attachContentHelpers(entry.view.webContents, entry.account.prefillEmail);
     bindWindowOpenHandler(entry.view.webContents);
     bindContextMenu(entry);
@@ -538,12 +641,9 @@ function getPositionLabel(accountId) {
   const index = ACCOUNTS.findIndex((acc) => acc.id === accountId);
   const labels = [
     "top-left",
-    "top-center-left",
-    "top-center-right",
+    "top-center",
     "top-right",
     "bottom-left",
-    "bottom-center-left",
-    "bottom-center-right",
     "bottom-right"
   ];
   if (index >= 0 && index < labels.length) {
