@@ -39,7 +39,7 @@ pub async fn create_token_request(
     State(state): State<AppState>,
     Json(body): Json<CreateTokenRequest>,
 ) -> (StatusCode, Json<CreateTokenResponse>) {
-    let mut req = AuthRequest::new(body.client_name, body.hostname, body.scopes);
+    let req = AuthRequest::new(body.client_name, body.hostname, body.scopes);
     let status = req.status.clone();
     let id = req.id;
     state.store.insert(req);
@@ -128,20 +128,17 @@ pub async fn select_account(
                 req.account_id = Some(body.account_id);
                 req.updated_at = chrono::Utc::now();
 
-                let result = state
-                    .oauth
-                    .build_auth_url(&req.id, &req.scopes)
-                    .and_then(|url| {
-                        async {
-                            state
-                                .control
-                                .open_auth(body.account_id, &url)
-                                .await
-                                .map_err(|e| crate::oauth::OAuthError::Exchange(e.to_string()))?;
-                            Ok::<_, crate::oauth::OAuthError>(url)
-                        }
-                        .await
-                    });
+                let result = match state.oauth.build_auth_url(&req.id, &req.scopes) {
+                    Ok(url) => {
+                        state
+                            .control
+                            .open_auth(body.account_id, &url)
+                            .await
+                            .map_err(|e| crate::oauth::OAuthError::Exchange(e.to_string()))
+                            .map(|_| url)
+                    }
+                    Err(err) => Err(err),
+                };
 
                 if let Err(err) = result {
                     req.status = RequestStatus::Error;
