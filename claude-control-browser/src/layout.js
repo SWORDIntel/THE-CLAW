@@ -41,9 +41,9 @@ function createAccountViews() {
 function layoutViewsInGrid(mainWindow, views) {
   const [winWidth, winHeight] = mainWindow.getContentSize();
 
-  // 5 panels: 3 on top row, 2 on bottom row
-  const topRowCount = 3;
-  const bottomRowCount = 2;
+  // 8 panels: 4 on top row, 4 on bottom row
+  const topRowCount = 4;
+  const bottomRowCount = 4;
   const rowHeight = Math.floor(winHeight / 2);
 
   views.forEach((entry, index) => {

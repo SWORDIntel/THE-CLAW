@@ -10,11 +10,6 @@ const CHROME_USER_AGENT =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
 
 const ACCOUNTS = [
-  { id: 1, name: "hacker1@leantwin.org", partition: "persist:claude-code-1", startupUrl: CLAUDE_CODE_URL },
-  { id: 2, name: "hacker22@leantwin.org", partition: "persist:claude-code-2", startupUrl: CLAUDE_CODE_URL },
-  { id: 3, name: "hacker3@leantwin.org", partition: "persist:claude-code-3", startupUrl: CLAUDE_CODE_URL },
-  { id: 4, name: "hacker4@leantwin.org", partition: "persist:claude-code-4", startupUrl: CLAUDE_CODE_URL },
-  { id: 5, name: "HACKER5@leantwin.org", partition: "persist:claude-code-5", startupUrl: CLAUDE_CODE_URL }
   { id: 1, name: "Claude Code #1", partition: "persist:claude-code-1", startupUrl: CLAUDE_CODE_URL, prefillEmail: "hacker@leantwin.org" },
   { id: 2, name: "Claude Code #2", partition: "persist:claude-code-2", startupUrl: CLAUDE_CODE_URL, prefillEmail: "hacker1@leantwin.org" },
   { id: 3, name: "Claude Code #3", partition: "persist:claude-code-3", startupUrl: CLAUDE_CODE_URL, prefillEmail: "hacker3@leantwin.org" },

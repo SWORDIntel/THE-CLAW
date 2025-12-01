@@ -174,12 +174,6 @@ function injectNavigationUI(webContents, accountName) {
   webContents.executeJavaScript(script).catch(() => {});
 }
 
-function attachContentHelpers(webContents, accountName) {
-  const applyHelpers = () => {
-    attachTempestTheme(webContents);
-    injectEmailLoginHelper(webContents);
-    if (accountName) {
-      injectNavigationUI(webContents, accountName);
 function injectEmailPrefill(webContents, prefillEmail) {
   if (!prefillEmail) return;
   const email = JSON.stringify(prefillEmail);
@@ -214,10 +208,13 @@ function injectEmailPrefill(webContents, prefillEmail) {
   webContents.executeJavaScript(script).catch(() => {});
 }
 
-function attachContentHelpers(webContents, prefillEmail) {
+function attachContentHelpers(webContents, accountName, prefillEmail) {
   const applyHelpers = () => {
     attachTempestTheme(webContents);
     injectEmailLoginHelper(webContents);
+    if (accountName) {
+      injectNavigationUI(webContents, accountName);
+    }
     if (prefillEmail) {
       injectEmailPrefill(webContents, prefillEmail);
     }
@@ -311,8 +308,7 @@ function createWindow() {
 
   views = createAccountViews();
   views.forEach((entry) => {
-    attachContentHelpers(entry.view.webContents, entry.account.name);
-    attachContentHelpers(entry.view.webContents, entry.account.prefillEmail);
+    attachContentHelpers(entry.view.webContents, entry.account.name, entry.account.prefillEmail);
     bindWindowOpenHandler(entry.view.webContents);
     bindContextMenu(entry);
   });
